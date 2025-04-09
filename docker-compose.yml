@@ -1,0 +1,63 @@
+name: yapper-user
+
+networks:
+  yapper-user-net:
+  yapper-message-bus-net:
+  yapper-api-gateway-net:
+
+volumes:
+  db_data:
+
+services:
+  db:
+    image: bitnami/postgresql
+    environment: # TODO: remove the secrets later on
+      POSTGRESQL_DATABASE: user
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      # user: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_PGAUDIT_LOG: READ,WRITE
+      POSTGRESQL_LOG_HOSTNAME: true
+      POSTGRESQL_REPLICATION_MODE: master
+      POSTGRESQL_REPLICATION_USER: ${POSTGRESQL_REPLICATION_USER}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRESQL_REPLICATION_PASSWORD}
+    healthcheck:
+      test: 
+        [ "CMD", "pg_isready", "-d", "${POSTGRESQL_DATABASE}", "-U", "${POSTGRESQL_USERNAME:-admin}" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - yapper-user-net
+  
+  pgpool:
+    image: bitnami/pgpool
+    environment:
+      PGPOOL_ADMIN_USERNAME: ${PGPOOL_ADMIN_USERNAME}
+      PGPOOL_ADMIN_PASSWORD: ${PGPOOL_ADMIN_PASSWORD}
+      PGPOOL_USERNAME: ${PGPOOL_USERNAME}
+      # pgpooluser: ${PGPOOL_USERNAME}
+      PGPOOL_PASSWORD: ${PGPOOL_PASSWORD}
+      PGPOOL_POSTGRES_USERNAME: ${POSTGRESQL_USERNAME}
+      PGPOOL_POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      PGPOOL_BACKEND_NODES: 0:db:5432
+      PGPOOL_BACKEND_APPLICATION_NAME: db
+      PGPOOL_BACKEND_WEIGHT: 1
+      PGPOOL_LOAD_BALANCE_MODE: stream
+      # Stream Replication Checks (bit redundant now, but just used as a placeholder)
+      PGPOOL_SR_CHECK_USER: ${POSTGRESQL_REPLICATION_USER}
+      PGPOOL_SR_CHECK_PASSWORD: ${POSTGRESQL_REPLICATION_PASSWORD}
+      PGPOOL_SR_CHECK_PERIOD: 10
+      PGPOOL_SR_CHECK_RETRY: 5
+      PGPOOL_SR_CHECK_TIMEOUT: 10
+      PGPOOL_ENABLE_LDAP: no
+      PGPOOL_CHILD_LIFE_TIME: 300
+    depends_on:
+      - db
+    ports:
+      - "5432:5432"
+    networks:
+      - yapper-user-net
