@@ -7,6 +7,7 @@ import (
 	"fateh-ark/yapper-user-service/service"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,7 @@ func main() {
 	pgPoolPort := os.Getenv("PGPOOL_PORT_NUMBER")
 	dbName := os.Getenv("POSTGRESQL_DATABASE")
 
-	connStr := fmt.Sprintf("postgres://%s:%s@pgpool:%s/%s", dbUser, dbPassword, pgPoolPort, dbName)
+	connStr := fmt.Sprintf("postgres://%s:%s@pgpool:%s/%s?sslmode=disable", url.QueryEscape(dbUser), url.QueryEscape(dbPassword), pgPoolPort, url.QueryEscape(dbName))
 
 	dbPool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
@@ -65,8 +66,8 @@ func main() {
 	{
 		// User
 		userApi.POST("", userController.CreateUser)
-		userApi.GET("/:username", userController.GetUserByUsername)
-		userApi.GET("/:email", userController.GetUserByEmail)
+		userApi.GET("/username/:username", userController.GetUserByUsername)
+		userApi.GET("/email/:email", userController.GetUserByEmail)
 
 		userIdGroup := userApi.Group("/:id")
 		{

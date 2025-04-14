@@ -62,3 +62,19 @@ services:
       - "${PGPOOL_PORT_NUMBER}:5432"
     networks:
       - yapper-user-net
+
+  user-service:
+    build: ./src
+    environment:
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      PGPOOL_PORT_NUMBER: ${PGPOOL_PORT_NUMBER}
+      USER_SERVICE_PORT_NUMBER: ${USER_SERVICE_PORT_NUMBER}
+    ports:
+      - "8080:${USER_SERVICE_PORT_NUMBER}"
+    networks:
+      - yapper-user-net
+    depends_on:
+      - pgpool
+      - db
