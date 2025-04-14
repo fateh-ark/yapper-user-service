@@ -12,8 +12,9 @@ services:
   db:
     image: bitnami/postgresql
     environment: # TODO: remove the secrets later on
-      POSTGRESQL_DATABASE: user
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PORT_NUMBER: ${POSTGRESQL_PORT_NUMBER}
       # user: ${POSTGRESQL_USERNAME}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       POSTGRESQL_PGAUDIT_LOG: READ,WRITE
@@ -23,7 +24,7 @@ services:
       POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRESQL_REPLICATION_PASSWORD}
     healthcheck:
       test: 
-        [ "CMD", "pg_isready", "-d", "${POSTGRESQL_DATABASE}", "-U", "${POSTGRESQL_USERNAME:-admin}" ]
+        [ "CMD", "pg_isready", "-d", "${POSTGRESQL_DATABASE}", "-U", "${POSTGRESQL_USERNAME}" ]
       interval: 30s
       timeout: 30s
       retries: 3
@@ -43,7 +44,7 @@ services:
       PGPOOL_PASSWORD: ${PGPOOL_PASSWORD}
       PGPOOL_POSTGRES_USERNAME: ${POSTGRESQL_USERNAME}
       PGPOOL_POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
-      PGPOOL_BACKEND_NODES: 0:db:5432
+      PGPOOL_BACKEND_NODES: 0:db:${POSTGRESQL_PORT_NUMBER}
       PGPOOL_BACKEND_APPLICATION_NAME: db
       PGPOOL_BACKEND_WEIGHT: 1
       PGPOOL_LOAD_BALANCE_MODE: stream
@@ -58,6 +59,6 @@ services:
     depends_on:
       - db
     ports:
-      - "5432:5432"
+      - "${PGPOOL_PORT_NUMBER}:5432"
     networks:
       - yapper-user-net
