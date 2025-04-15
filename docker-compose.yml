@@ -3,9 +3,9 @@ name: yapper-user
 networks:
   yapper-user-net:
     name: yapper-user-net
-  # yapper-message-bus-net:
-  #   name:  yapper-message-bus-net
-  #   external: true
+  yapper-message-bus-net:
+    name:  yapper-message-bus-net
+    external: true
 
 volumes:
   db_data:
@@ -13,11 +13,10 @@ volumes:
 services:
   db:
     image: bitnami/postgresql
-    environment: # TODO: remove the secrets later on
+    environment: # TODO: move secrets to non-envs later on later on
       POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
       POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
       POSTGRESQL_PORT_NUMBER: ${POSTGRESQL_PORT_NUMBER}
-      # user: ${POSTGRESQL_USERNAME}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       POSTGRESQL_PGAUDIT_LOG: READ,WRITE
       POSTGRESQL_LOG_HOSTNAME: true
@@ -35,7 +34,7 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - yapper-user-net
-      # - yapper-message-bus-net
+      - yapper-message-bus-net
   
   pgpool:
     image: bitnami/pgpool
@@ -65,7 +64,7 @@ services:
       - "${PGPOOL_PORT_NUMBER}:5432"
     networks:
       - yapper-user-net
-      # - yapper-message-bus-net
+      - yapper-message-bus-net
 
   user-service:
     build: ./src
@@ -75,10 +74,14 @@ services:
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
       PGPOOL_PORT_NUMBER: ${PGPOOL_PORT_NUMBER}
       USER_SERVICE_PORT_NUMBER: ${USER_SERVICE_PORT_NUMBER}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_PORT_NUMBER: ${RABBITMQ_PORT_NUMBER}
     ports:
       - "8080:${USER_SERVICE_PORT_NUMBER}"
     networks:
       - yapper-user-net
+      - yapper-message-bus-net
     depends_on:
       - pgpool
       - db

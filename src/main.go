@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fateh-ark/yapper-user-service/controller"
+	"fateh-ark/yapper-user-service/logger"
 	"fateh-ark/yapper-user-service/repositories"
 	"fateh-ark/yapper-user-service/service"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 var dbPool *pgxpool.Pool // Use pgxpool.Pool
@@ -31,13 +33,46 @@ func main() {
 	pgPoolPort := os.Getenv("PGPOOL_PORT_NUMBER")
 	dbName := os.Getenv("POSTGRESQL_DATABASE")
 
-	connStr := fmt.Sprintf("postgres://%s:%s@pgpool:%s/%s?sslmode=disable", url.QueryEscape(dbUser), url.QueryEscape(dbPassword), pgPoolPort, url.QueryEscape(dbName))
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@pgpool:%s/%s?sslmode=disable",
+		url.QueryEscape(dbUser),
+		url.QueryEscape(dbPassword),
+		pgPoolPort, url.QueryEscape(dbName),
+	)
+
+	// log.Println("connecting pg to:", connStr)
 
 	dbPool, err = pgxpool.New(context.Background(), connStr)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("failed to connect to database pool: %v", err)
 	}
 	defer dbPool.Close()
+
+	// Setup RabbitMQ Connection
+	rmqUser := os.Getenv("RABBITMQ_USERNAME")
+	rmqPassword := os.Getenv("RABBITMQ_PASSWORD")
+	rmqPort := os.Getenv("RABBITMQ_PORT_NUMBER")
+
+	rmqConnStr := fmt.Sprintf("amqp://%s:%s@rabbitmq:%s/",
+		url.QueryEscape(rmqUser),
+		url.QueryEscape(rmqPassword),
+		rmqPort,
+	)
+
+	log.Println("connecting rmq to:", rmqConnStr)
+
+	rmqConn, err := amqp.Dial(rmqConnStr)
+	if err != nil {
+		log.Fatal("failed to connect to rabbitmq:", err)
+	}
+	defer rmqConn.Close()
+
+	// Setup Logger
+	loggerInstance, err := logger.NewLogger(rmqConn, "service_log")
+	if err != nil {
+		log.Fatal("failed to setup logger:", err)
+	}
+	defer loggerInstance.CloseChannel()
 
 	// Setup the Repositories
 	userRepo := repositories.NewUserRepository(dbPool)
@@ -61,6 +96,8 @@ func main() {
 
 	// Setup Gin Routes
 	router := gin.Default()
+
+	router.Use(controller.LoggerHandler(loggerInstance))
 
 	userApi := router.Group("/user/v1")
 	{
