@@ -1,5 +1,5 @@
 -- Users Table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE users (
 
 -- Followers Table (for the follow/unfollow functionality)
 -- Might be a temporary table before making following feature its own database and/or service.
-CREATE TABLE followers (
+CREATE TABLE IF NOT EXISTS followers (
     follower_id BIGINT NOT NULL,
     following_id BIGINT NOT NULL,
     followed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -21,7 +21,7 @@ CREATE TABLE followers (
 );
 
 -- User Profiles (for additional profile information)
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     user_id BIGINT PRIMARY KEY,
     bio VARCHAR(160),
     job VARCHAR(50),
@@ -34,7 +34,7 @@ CREATE TABLE user_profiles (
 );
 
 -- User Preferences (for storing user-specific settings)
-CREATE TABLE user_preferences (
+CREATE TABLE IF NOT EXISTS user_preferences (
     user_id BIGINT PRIMARY KEY,
     notifications_enabled BOOLEAN DEFAULT TRUE,
     account_private BOOLEAN DEFAULT FALSE,
@@ -52,17 +52,17 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- updated_at triggers for all tables with it
-CREATE TRIGGER users_updated_at_trigger
+CREATE OR REPLACE TRIGGER users_updated_at_trigger
 BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
-CREATE TRIGGER user_profiles_updated_at_trigger
+CREATE OR REPLACE TRIGGER user_profiles_updated_at_trigger
 BEFORE UPDATE ON user_profiles
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();
 
-CREATE TRIGGER user_preferences_updated_at_trigger
+CREATE OR REPLACE TRIGGER user_preferences_updated_at_trigger
 BEFORE UPDATE ON user_preferences
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at();

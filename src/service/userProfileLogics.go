@@ -19,6 +19,7 @@ func (s *userServiceImpl) UpsertUserProfile(ctx context.Context, userID int64, r
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			newProfile := &model.UserProfile{
+				UserID:     userID,
 				Bio:        request.Bio,
 				Job:        request.Job,
 				Location:   request.Location,

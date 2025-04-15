@@ -21,9 +21,21 @@ func (s *userServiceImpl) UpsertUserPreference(ctx context.Context, userID int64
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			newPreference := &model.UserPreference{
-				NotificationsEnabled: request.NotificationsEnabled,
-				AccountPrivate:       request.AccountPrivate,
+				UserID: userID,
 			}
+
+			if request.NotificationsEnabled != nil {
+				newPreference.NotificationsEnabled = *request.NotificationsEnabled
+			} else {
+				newPreference.NotificationsEnabled = true
+			}
+
+			if request.AccountPrivate != nil {
+				newPreference.AccountPrivate = *request.AccountPrivate
+			} else {
+				newPreference.NotificationsEnabled = false
+			}
+
 			if err := s.preferenceRepo.UpsertUserPreference(ctx, newPreference); err != nil {
 				return nil, err
 			}
@@ -32,8 +44,13 @@ func (s *userServiceImpl) UpsertUserPreference(ctx context.Context, userID int64
 		return nil, err
 	}
 
-	existingPrefs.NotificationsEnabled = request.NotificationsEnabled
-	existingPrefs.AccountPrivate = request.AccountPrivate
+	//TODO: make some util to make this easier to expand, same goes for other logics.
+	if request.NotificationsEnabled != nil {
+		existingPrefs.NotificationsEnabled = *request.NotificationsEnabled
+	}
+	if request.AccountPrivate != nil {
+		existingPrefs.AccountPrivate = *request.AccountPrivate
+	}
 
 	if err = s.preferenceRepo.UpsertUserPreference(ctx, existingPrefs); err != nil {
 		return nil, err

@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"errors"
 	"fateh-ark/yapper-user-service/request"
 	"fateh-ark/yapper-user-service/service"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,12 +44,13 @@ func (fc *followerControllerImpl) FollowUser(c *gin.Context) {
 	}
 
 	if err := fc.userService.FollowUser(c.Request.Context(), id, &request); err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
-			return
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else if errors.Is(err, service.ErrIsAlreadyFollowing) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": ErrConflictingRequest, "details": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -72,12 +73,13 @@ func (fc *followerControllerImpl) UnfollowUser(c *gin.Context) {
 	}
 
 	if err := fc.userService.UnfollowUser(c.Request.Context(), id, &request); err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
-			return
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else if errors.Is(err, service.ErrIsAlreadyNotFollowing) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": ErrConflictingRequest, "details": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -93,12 +95,11 @@ func (fc *followerControllerImpl) GetFollowers(c *gin.Context) {
 
 	followers, err := fc.userService.GetFollowers(c.Request.Context(), id)
 	if err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, followers)
@@ -114,12 +115,11 @@ func (fc *followerControllerImpl) GetFollowing(c *gin.Context) {
 
 	following, err := fc.userService.GetFollowing(c.Request.Context(), id)
 	if err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, following)
@@ -143,15 +143,14 @@ func (fc *followerControllerImpl) IsFollowing(c *gin.Context) {
 
 	isFollowing, err := fc.userService.Isfollowing(c.Request.Context(), id, &request)
 	if err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusNoContent, gin.H{"is_following": isFollowing})
+	c.JSON(http.StatusOK, gin.H{"is_following": isFollowing})
 }
 
 func (fc *followerControllerImpl) GetFollowStats(c *gin.Context) {
@@ -164,12 +163,11 @@ func (fc *followerControllerImpl) GetFollowStats(c *gin.Context) {
 
 	stat, err := fc.userService.GetFollowStats(c.Request.Context(), id)
 	if err != nil {
-		errMessage := err.Error()
-		if strings.Contains(errMessage, service.ErrUserNotFound.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"error": errMessage})
+		if errors.Is(err, service.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errMessage})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, stat)

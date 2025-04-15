@@ -21,7 +21,7 @@ func (s *userServiceImpl) CreateUser(ctx context.Context, request *request.Creat
 
 	user := &model.User{
 		Username:    request.Username,
-		Email:       request.Username,
+		Email:       request.Email,
 		DisplayName: request.DisplayName,
 	}
 
@@ -101,6 +101,13 @@ func (s *userServiceImpl) UpdateUser(ctx context.Context, userID int64, request 
 }
 
 func (s *userServiceImpl) DeleteUser(ctx context.Context, userID int64) error {
+	if _, err := s.userRepo.GetUserByID(ctx, userID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
 	err := s.userRepo.DeleteUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -27,6 +27,6 @@ type UserProfileReq struct {
 }
 
 type UserPreferenceReq struct {
-	NotificationsEnabled bool `json:"notifications_enabled"`
-	AccountPrivate       bool `json:"account_private"`
+	NotificationsEnabled *bool `json:"notifications_enabled"`
+	AccountPrivate       *bool `json:"account_private"`
 }

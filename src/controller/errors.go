@@ -1,6 +1,7 @@
 package controller
 
 var (
-	ErrInvalidRequest = "request is malformed or invalid"
-	ErrInvalidUserId  = "invalid user id"
+	ErrInvalidRequest     = "request is malformed or invalid"
+	ErrInvalidUserId      = "invalid user id"
+	ErrConflictingRequest = "conflicting request"
 )

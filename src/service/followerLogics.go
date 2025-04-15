@@ -8,32 +8,24 @@ import (
 )
 
 func (s *userServiceImpl) FollowUser(ctx context.Context, userID int64, request *request.FollowReq) error {
-	if userID == request.FollowingID {
-		return ErrCannotFollowSelf
-	}
-
-	_, err := s.GetUserByID(ctx, userID)
+	isFollowing, err := s.Isfollowing(ctx, userID, request)
 	if err != nil {
-		return fmt.Errorf("failed to check follower user: %w", err)
+		return err
 	}
-
-	_, err = s.GetUserByID(ctx, request.FollowingID)
-	if err != nil {
-		return fmt.Errorf("failed to check following user: %w", err)
+	if isFollowing == true {
+		return ErrIsAlreadyFollowing
 	}
 
 	return s.followerRepo.FollowUser(ctx, userID, request.FollowingID)
 }
 
 func (s *userServiceImpl) UnfollowUser(ctx context.Context, userID int64, request *request.FollowReq) error {
-	_, err := s.GetUserByID(ctx, userID)
+	isFollowing, err := s.Isfollowing(ctx, userID, request)
 	if err != nil {
-		return fmt.Errorf("failed to check follower: %w", err)
+		return err
 	}
-
-	_, err = s.GetUserByID(ctx, request.FollowingID)
-	if err != nil {
-		return fmt.Errorf("failed to check following: %w", err)
+	if isFollowing == false {
+		return ErrIsAlreadyNotFollowing
 	}
 
 	return s.followerRepo.UnfollowUser(ctx, userID, request.FollowingID)
@@ -58,14 +50,16 @@ func (s *userServiceImpl) GetFollowing(ctx context.Context, userID int64) ([]int
 }
 
 func (s *userServiceImpl) Isfollowing(ctx context.Context, userID int64, request *request.FollowReq) (bool, error) {
-	_, err := s.GetUserByID(ctx, userID)
-	if err != nil {
-		return false, fmt.Errorf("failed to check follower: %w", err)
+	if userID == request.FollowingID {
+		return false, ErrCannotFollowSelf
 	}
 
-	_, err = s.GetUserByID(ctx, request.FollowingID)
-	if err != nil {
-		return false, fmt.Errorf("failed to check following: %w", err)
+	if _, err := s.GetUserByID(ctx, userID); err != nil {
+		return false, fmt.Errorf("failed to check follower user: %w", err)
+	}
+
+	if _, err := s.GetUserByID(ctx, request.FollowingID); err != nil {
+		return false, fmt.Errorf("failed to check following user: %w", err)
 	}
 	return s.followerRepo.IsFollowing(ctx, userID, request.FollowingID)
 }

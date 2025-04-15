@@ -121,9 +121,11 @@ func (uc *userControllerImpl) UpdateUser(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, service.ErrUserNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
+		} else if errors.Is(err, service.ErrEmailAlreadyInUse) || errors.Is(err, service.ErrUsernameAlreadyInUse) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, updatedUser)
